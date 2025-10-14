@@ -415,6 +415,11 @@ export interface TitleLayer extends TextLayer, KenBurns {
   type: "title";
 
   /**
+   * Font size.
+   */
+  fontSize?: number;
+
+  /**
    * Position.
    */
   position?: Position;
@@ -425,6 +430,11 @@ export interface SubtitleLayer extends TextLayer {
    * Layer type.
    */
   type: "subtitle";
+
+  /**
+   * Font size.
+   */
+  fontSize?: number;
 
   /**
    * WARNING: Undocumented feature!
@@ -443,6 +453,11 @@ export interface TitleBackgroundLayer extends TextLayer {
    * Layer type.
    */
   type: "title-background";
+
+  /**
+   * Font size.
+   */
+  fontSize?: number;
 
   /**
    * Background layer.

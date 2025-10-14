@@ -12,6 +12,7 @@ export default defineFrameSource<SubtitleLayer>("subtitle", async ({ width, heig
     fontFamily = defaultFontFamily,
     delay = 0,
     speed = 1,
+    fontSize,
   } = params;
 
   return {
@@ -20,12 +21,12 @@ export default defineFrameSource<SubtitleLayer>("subtitle", async ({ width, heig
 
       const min = Math.min(width, height);
       const padding = 0.05 * min;
+      const fontSizeAbs = fontSize ? Math.round(fontSize) : min / 20;
 
       const textBox = new Textbox(text, {
         fill: textColor,
         fontFamily,
-
-        fontSize: min / 20,
+        fontSize: fontSizeAbs,
         textAlign: "left",
         width: width - padding * 2,
         originX: "center",

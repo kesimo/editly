@@ -1,5 +1,5 @@
 {
-  "name": "editly",
+  "name": "@kesimo/editly",
   "description": "Simple, sexy, declarative video editing",
   "version": "0.15.0-rc.1",
   "module": "./dist/index.js",
@@ -49,7 +49,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mifi/editly.git"
+    "url": "git+https://github.com/kesimo/editly.git"
   },
   "bin": {
     "editly": "dist/cli.js"

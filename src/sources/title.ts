@@ -16,13 +16,14 @@ export default defineFrameSource<TitleLayer>("title", async ({ width, height, pa
     position = "center",
     zoomDirection = "in",
     zoomAmount = 0.2,
+    fontSize,
   } = params;
-  const fontSize = Math.round(Math.min(width, height) * 0.1);
+  const fontSizeAbs = fontSize ? Math.round(fontSize) : Math.round(Math.min(width, height) * 0.1);
 
   const textBox = new Textbox(text, {
     fill: textColor,
     fontFamily,
-    fontSize,
+    fontSize: fontSizeAbs,
     textAlign: "center",
     width: width * 0.8,
   });
