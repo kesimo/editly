@@ -1,7 +1,7 @@
 {
   "name": "@kesimo/editly",
   "description": "Simple, sexy, declarative video editing",
-  "version": "0.16.0",
+  "version": "0.16.1",
   "module": "./dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
