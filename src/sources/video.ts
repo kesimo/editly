@@ -4,6 +4,7 @@ import { defineFrameSource } from "../api/index.js";
 import { ffmpeg, readFileStreams } from "../ffmpeg.js";
 import { rawVideoToFrames } from "../transforms/rawVideoToFrames.js";
 import type { VideoLayer } from "../types.js";
+import { getPositionProps } from "../util.js";
 import { blurImage, rgbaToFabricImage } from "./fabric.js";
 
 export default defineFrameSource<VideoLayer>("video", async (options) => {
@@ -27,10 +28,11 @@ export default defineFrameSource<VideoLayer>("video", async (options) => {
     inputHeight,
     width: requestedWidthRel,
     height: requestedHeightRel,
-    left: leftRel = 0,
-    top: topRel = 0,
-    originX = "left",
-    originY = "top",
+    position,
+    left: leftRel,
+    top: topRel,
+    originX: originXLegacy,
+    originY: originYLegacy,
     fabricImagePostProcessing = null,
   } = params;
 
@@ -41,8 +43,25 @@ export default defineFrameSource<VideoLayer>("video", async (options) => {
     ? Math.round(requestedHeightRel * canvasHeight)
     : canvasHeight;
 
-  const left = leftRel * canvasWidth;
-  const top = topRel * canvasHeight;
+  // Use new position parameter if provided, otherwise fall back to legacy parameters
+  let left: number;
+  let top: number;
+  let originX: fabric.TOriginX;
+  let originY: fabric.TOriginY;
+
+  if (position !== undefined) {
+    const positionProps = getPositionProps({ position, width: canvasWidth, height: canvasHeight });
+    left = positionProps.left;
+    top = positionProps.top;
+    originX = positionProps.originX;
+    originY = positionProps.originY;
+  } else {
+    // Legacy positioning support
+    left = (leftRel ?? 0) * canvasWidth;
+    top = (topRel ?? 0) * canvasHeight;
+    originX = originXLegacy ?? "left";
+    originY = originYLegacy ?? "top";
+  }
 
   const ratioW = requestedWidth / inputWidth!;
   const ratioH = requestedHeight / inputHeight!;

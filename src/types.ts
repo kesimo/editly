@@ -254,10 +254,16 @@ export interface VideoLayer extends BaseLayer {
   height?: number;
 
   /**
+   * Position.
+   */
+  position?: Position;
+
+  /**
    * X-position relative to screen width.
    * Must be between 0 and 1.
    *
    * @default 0
+   * @deprecated Use `position` instead
    */
   left?: number;
 
@@ -266,6 +272,7 @@ export interface VideoLayer extends BaseLayer {
    * Must be between 0 and 1.
    *
    * @default 0
+   * @deprecated Use `position` instead
    */
   top?: number;
 
@@ -273,6 +280,7 @@ export interface VideoLayer extends BaseLayer {
    * X-anchor.
    *
    * @default 'left'
+   * @deprecated Use `position` instead
    */
   originX?: OriginX;
 
@@ -280,6 +288,7 @@ export interface VideoLayer extends BaseLayer {
    * Y-anchor.
    *
    * @default 'top'
+   * @deprecated Use `position` instead
    */
   originY?: OriginY;
 
@@ -423,6 +432,14 @@ export interface TitleLayer extends TextLayer, KenBurns {
    * Position.
    */
   position?: Position;
+
+  /**
+   * Animation style for the title.
+   * - `'word-by-word'` - Words appear one by one
+   * - `'fade-in'` - Text fades in smoothly
+   * - `'letter-by-letter'` - Letters appear one by one
+   */
+  style?: "word-by-word" | "fade-in" | "letter-by-letter";
 }
 
 export interface SubtitleLayer extends TextLayer {
