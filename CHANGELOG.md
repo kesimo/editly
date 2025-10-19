@@ -1,5 +1,9 @@
 # Changelog - Title Layer Animation Effects
 
+## Version: 0.16.1
+
+- Fix: No style, no zoom text applied
+
 ## Version: 0.16.0
 
 **Date:** 19.10.2025

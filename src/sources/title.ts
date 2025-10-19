@@ -18,7 +18,7 @@ export default defineFrameSource<TitleLayer>("title", async ({ width, height, pa
     zoomDirection = "in",
     zoomAmount = 0.2,
     fontSize,
-    style = "fade-in",
+    style,
   } = params;
   const fontSizeAbs = fontSize ? Math.round(fontSize) : Math.round(Math.min(width, height) * 0.1);
 
@@ -76,8 +76,25 @@ export default defineFrameSource<TitleLayer>("title", async ({ width, height, pa
           break;
 
         case "fade-in":
-        default:
           await renderFadeIn({
+            text,
+            textColor,
+            fontFamily,
+            fontSize: fontSizeAbs,
+            progress,
+            canvas,
+            left,
+            top,
+            originX,
+            originY,
+            scaleFactor,
+            translationParams,
+          });
+          break;
+
+        default:
+          // No style - render static title with zoom effects
+          await renderStaticTitle({
             text,
             textColor,
             fontFamily,
@@ -96,6 +113,61 @@ export default defineFrameSource<TitleLayer>("title", async ({ width, height, pa
     },
   };
 });
+
+async function renderStaticTitle({
+  text,
+  textColor,
+  fontFamily,
+  fontSize,
+  canvas,
+  left,
+  top,
+  originX,
+  originY,
+  scaleFactor,
+  translationParams,
+}: {
+  text: string;
+  textColor: string;
+  fontFamily: string;
+  fontSize: number;
+  progress: number;
+  canvas: fabric.StaticCanvas;
+  left: number;
+  top: number;
+  originX: OriginX;
+  originY: OriginY;
+  scaleFactor: number;
+  translationParams: number;
+}) {
+  // Determine text alignment based on position
+  let textAlign: "left" | "center" | "right" = "center";
+  if (originX === "left") textAlign = "left";
+  else if (originX === "right") textAlign = "right";
+
+  const textBox = new Textbox(text, {
+    fill: textColor,
+    fontFamily,
+    fontSize,
+    textAlign: textAlign,
+    width: canvas.width * 0.8,
+  });
+
+  const textImage = textBox.cloneAsImage({});
+
+  // Static title - no fade effect, just zoom
+  textImage.set({
+    originX,
+    originY,
+    left: left + translationParams,
+    top: top + translationParams,
+    scaleX: scaleFactor,
+    scaleY: scaleFactor,
+    opacity: 1, // Always fully visible
+  });
+
+  canvas.add(textImage);
+}
 
 async function renderFadeIn({
   text,
