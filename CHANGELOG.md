@@ -1,5 +1,33 @@
 # Changelog - Title Layer Animation Effects
 
+## Version: 0.17.0
+
+**Date:** 18.11.2025
+
+### ✨ Title outline & animation improvements
+
+- Add text outline effects for title layers:
+  - New `outlineColor`, `outlineWidth` and `outlineStyle` (`"outline" | "shadow" | "glow"`) options.
+  - 2-layer rendering (outline below, fill above) so text stays fully readable even with thick outlines.
+  - Corrected outline alignment for `top`/`bottom` positions for all outline styles.
+- Add `animationDuration` (seconds) for `word-by-word` and `letter-by-letter` title animations to control reveal speed.
+
+#### Example title layer with new properties
+
+```json5
+{
+  type: "title",
+  text: "My Title",
+  textColor: "#ffffff",
+  position: "center",
+  style: "word-by-word", // 'word-by-word' | 'letter-by-letter' | 'fade-in'
+  animationDuration: 1.5, // number (seconds)
+  outlineColor: "#000000", // string
+  outlineWidth: 4, // number (pixels)
+  outlineStyle: "shadow", // 'outline' | 'shadow' | 'glow'
+}
+```
+
 ## Version: 0.16.1
 
 - Fix: No style, no zoom text applied

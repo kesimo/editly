@@ -440,6 +440,35 @@ export interface TitleLayer extends TextLayer, KenBurns {
    * - `'letter-by-letter'` - Letters appear one by one
    */
   style?: "word-by-word" | "fade-in" | "letter-by-letter";
+
+  /**
+   * Duration of the animated title reveal in seconds.
+   * Applies to styles that animate over time (currently `word-by-word` and `letter-by-letter`).
+   * If unset, a default duration based on the text length is used.
+   */
+  animationDuration?: number;
+
+  /**
+   * Outline (stroke) color for the text.
+   * Helps make text visible on different backgrounds.
+   */
+  outlineColor?: string;
+
+  /**
+   * Outline (stroke) width in pixels.
+   * Defaults to 0 (no outline).
+   */
+  outlineWidth?: number;
+
+  /**
+   * Outline style/effect to apply.
+   * - `'outline'` - Classic stroke outline around text
+   * - `'shadow'` - Drop shadow effect
+   * - `'glow'` - Glow/halo effect around text
+   *
+   * @default 'outline'
+   */
+  outlineStyle?: "outline" | "shadow" | "glow";
 }
 
 export interface SubtitleLayer extends TextLayer {

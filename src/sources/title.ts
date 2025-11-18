@@ -9,6 +9,178 @@ import {
   getZoomParams,
 } from "../util.js";
 
+interface EffectProperties {
+  strokeWidth: number;
+  shadowColor?: string;
+  shadowBlur?: number;
+  shadowOffsetX?: number;
+  shadowOffsetY?: number;
+}
+
+/**
+ * Maps outlineStyle and outlineWidth to concrete effect properties
+ */
+function getEffectProperties(
+  outlineStyle: "outline" | "shadow" | "glow",
+  outlineWidth: number,
+  outlineColor?: string,
+  textColor?: string,
+): EffectProperties {
+  if (outlineWidth === 0) {
+    return { strokeWidth: 0 };
+  }
+
+  switch (outlineStyle) {
+    case "outline":
+      return {
+        strokeWidth: outlineWidth,
+      };
+
+    case "shadow":
+      return {
+        strokeWidth: Math.min(outlineWidth, 2),
+        shadowColor: outlineColor || "#000000",
+        shadowBlur: outlineWidth * 1.5,
+        shadowOffsetX: outlineWidth,
+        shadowOffsetY: outlineWidth,
+      };
+
+    case "glow":
+      return {
+        strokeWidth: Math.min(outlineWidth, 1.5),
+        shadowColor: outlineColor || textColor || "#ffffff",
+        shadowBlur: outlineWidth * 3,
+        shadowOffsetX: 0,
+        shadowOffsetY: 0,
+      };
+
+    default:
+      return { strokeWidth: outlineWidth };
+  }
+}
+
+/**
+ * Renders text with 2-layer system: outline/effect layer below, fill layer on top
+ * This ensures text remains fully visible regardless of outline width
+ */
+function renderTextWithEffect({
+  text,
+  textColor,
+  fontFamily,
+  fontSize,
+  textAlign,
+  width,
+  canvas,
+  left,
+  top,
+  originX,
+  originY,
+  scaleX,
+  scaleY,
+  opacity,
+  outlineColor,
+  outlineWidth,
+  outlineStyle,
+}: {
+  text: string;
+  textColor: string;
+  fontFamily: string;
+  fontSize: number;
+  textAlign: "left" | "center" | "right";
+  width: number;
+  canvas: fabric.StaticCanvas;
+  left: number;
+  top: number;
+  originX: OriginX;
+  originY: OriginY;
+  scaleX: number;
+  scaleY: number;
+  opacity: number;
+  outlineColor?: string;
+  outlineWidth: number;
+  outlineStyle: "outline" | "shadow" | "glow";
+}) {
+  const effectProps = getEffectProperties(outlineStyle, outlineWidth, outlineColor, textColor);
+
+  // Measure text height without stroke to derive a visual center, so that top/bottom
+  // positions stay consistent regardless of outline width.
+  const measureBox = new Textbox(text, {
+    fill: textColor,
+    fontFamily,
+    fontSize,
+    textAlign,
+    width,
+  });
+
+  const textHeight = measureBox.height || 0;
+
+  // Compute centerY based on requested originY from positioning logic
+  let centerY = top;
+  if (originY === "top") {
+    centerY = top + textHeight / 2;
+  } else if (originY === "bottom") {
+    centerY = top - textHeight / 2;
+  }
+
+  // For rendering we always use originY = "center" to keep outline symmetric
+  const renderOriginY: OriginY = "center";
+
+  // Layer 1: Outline/stroke layer (rendered first, appears behind)
+  if (outlineWidth > 0 && outlineColor) {
+    const outlineBox = new Textbox(text, {
+      fill: outlineColor,
+      fontFamily,
+      fontSize,
+      textAlign,
+      width,
+      stroke: outlineColor,
+      strokeWidth: effectProps.strokeWidth,
+      strokeLineJoin: "round",
+      shadow: effectProps.shadowColor
+        ? new fabric.Shadow({
+            color: effectProps.shadowColor,
+            blur: effectProps.shadowBlur || 0,
+            offsetX: effectProps.shadowOffsetX || 0,
+            offsetY: effectProps.shadowOffsetY || 0,
+          })
+        : undefined,
+    });
+
+    const outlineImage = outlineBox.cloneAsImage({});
+    outlineImage.set({
+      originX,
+      originY: renderOriginY,
+      left,
+      top: centerY,
+      scaleX,
+      scaleY,
+      opacity,
+    });
+    canvas.add(outlineImage);
+  }
+
+  // Layer 2: Fill layer (rendered on top, text remains fully visible)
+  const fillBox = new Textbox(text, {
+    fill: textColor,
+    fontFamily,
+    fontSize,
+    textAlign,
+    width,
+  });
+
+  const fillImage = fillBox.cloneAsImage({});
+  fillImage.set({
+    originX,
+    originY: renderOriginY,
+    left,
+    top: centerY,
+    scaleX,
+    scaleY,
+    opacity,
+  });
+  canvas.add(fillImage);
+}
+
 export default defineFrameSource<TitleLayer>("title", async ({ width, height, params }) => {
   const {
     text,
@@ -19,13 +191,17 @@ export default defineFrameSource<TitleLayer>("title", async ({ width, height, pa
     zoomAmount = 0.2,
     fontSize,
     style,
+    animationDuration,
+    outlineColor,
+    outlineWidth = 0,
+    outlineStyle = "outline",
   } = params;
   const fontSizeAbs = fontSize ? Math.round(fontSize) : Math.round(Math.min(width, height) * 0.1);
 
   const { left, top, originX, originY } = getPositionProps({ position, width, height });
 
   return {
-    async readNextFrame(progress, canvas) {
+    async readNextFrame(progress, canvas, offsetTime) {
       // Disable zoom effects only for word-by-word and letter-by-letter styles
       const effectiveZoomDirection =
         style === "word-by-word" || style === "letter-by-letter" ? null : zoomDirection;
@@ -40,14 +216,21 @@ export default defineFrameSource<TitleLayer>("title", async ({ width, height, pa
         zoomAmount,
       });
 
+      const timeSinceStart = typeof offsetTime === "number" ? offsetTime : progress;
+
       switch (style) {
-        case "word-by-word":
+        case "word-by-word": {
+          const animationProgress =
+            animationDuration && animationDuration > 0
+              ? Math.min(Math.max(timeSinceStart / animationDuration, 0), 1)
+              : progress;
+
           await renderWordByWord({
             text,
             textColor,
             fontFamily,
             fontSize: fontSizeAbs,
-            progress,
+            progress: animationProgress,
             canvas,
             left: left + translationParams,
             top,
@@ -55,16 +238,25 @@ export default defineFrameSource<TitleLayer>("title", async ({ width, height, pa
             originY,
             scaleFactor,
             width,
+            outlineColor,
+            outlineWidth,
+            outlineStyle,
           });
           break;
+        }
 
-        case "letter-by-letter":
+        case "letter-by-letter": {
+          const animationProgress =
+            animationDuration && animationDuration > 0
+              ? Math.min(Math.max(timeSinceStart / animationDuration, 0), 1)
+              : progress;
+
           await renderLetterByLetter({
             text,
             textColor,
             fontFamily,
             fontSize: fontSizeAbs,
-            progress,
+            progress: animationProgress,
             canvas,
             left: left + translationParams,
             top,
@@ -72,8 +264,12 @@ export default defineFrameSource<TitleLayer>("title", async ({ width, height, pa
             originY,
             scaleFactor,
             width,
+            outlineColor,
+            outlineWidth,
+            outlineStyle,
           });
           break;
+        }
 
         case "fade-in":
           await renderFadeIn({
@@ -89,6 +285,9 @@ export default defineFrameSource<TitleLayer>("title", async ({ width, height, pa
             originY,
             scaleFactor,
             translationParams,
+            outlineColor,
+            outlineWidth,
+            outlineStyle,
           });
           break;
 
@@ -107,6 +306,9 @@ export default defineFrameSource<TitleLayer>("title", async ({ width, height, pa
             originY,
             scaleFactor,
             translationParams,
+            outlineColor,
+            outlineWidth,
+            outlineStyle,
           });
           break;
       }
@@ -126,6 +328,9 @@ async function renderStaticTitle({
   originY,
   scaleFactor,
   translationParams,
+  outlineColor,
+  outlineWidth,
+  outlineStyle,
 }: {
   text: string;
   textColor: string;
@@ -139,34 +344,34 @@ async function renderStaticTitle({
   originY: OriginY;
   scaleFactor: number;
   translationParams: number;
+  outlineColor?: string;
+  outlineWidth: number;
+  outlineStyle: "outline" | "shadow" | "glow";
 }) {
   // Determine text alignment based on position
   let textAlign: "left" | "center" | "right" = "center";
   if (originX === "left") textAlign = "left";
   else if (originX === "right") textAlign = "right";
 
-  const textBox = new Textbox(text, {
-    fill: textColor,
+  renderTextWithEffect({
+    text,
+    textColor,
     fontFamily,
     fontSize,
-    textAlign: textAlign,
+    textAlign,
     width: canvas.width * 0.8,
-  });
-
-  const textImage = textBox.cloneAsImage({});
-
-  // Static title - no fade effect, just zoom
-  textImage.set({
-    originX,
-    originY,
+    canvas,
     left: left + translationParams,
     top: top + translationParams,
+    originX,
+    originY,
     scaleX: scaleFactor,
     scaleY: scaleFactor,
-    opacity: 1, // Always fully visible
+    opacity: 1,
+    outlineColor,
+    outlineWidth,
+    outlineStyle,
   });
-
-  canvas.add(textImage);
 }
 
 async function renderFadeIn({
@@ -182,6 +387,9 @@ async function renderFadeIn({
   originY,
   scaleFactor,
   translationParams,
+  outlineColor,
+  outlineWidth,
+  outlineStyle,
 }: {
   text: string;
   textColor: string;
@@ -195,36 +403,37 @@ async function renderFadeIn({
   originY: OriginY;
   scaleFactor: number;
   translationParams: number;
+  outlineColor?: string;
+  outlineWidth: number;
+  outlineStyle: "outline" | "shadow" | "glow";
 }) {
   // Determine text alignment based on position
   let textAlign: "left" | "center" | "right" = "center";
   if (originX === "left") textAlign = "left";
   else if (originX === "right") textAlign = "right";
 
-  const textBox = new Textbox(text, {
-    fill: textColor,
-    fontFamily,
-    fontSize,
-    textAlign: textAlign,
-    width: canvas.width * 0.8,
-  });
-
-  const textImage = textBox.cloneAsImage({});
-
   // Fade in effect: opacity goes from 0 to 1 over the first 30% of the progress
   const fadeProgress = Math.min(progress / 0.3, 1);
 
-  textImage.set({
-    originX,
-    originY,
+  renderTextWithEffect({
+    text,
+    textColor,
+    fontFamily,
+    fontSize,
+    textAlign,
+    width: canvas.width * 0.8,
+    canvas,
     left: left + translationParams,
     top: top + translationParams,
+    originX,
+    originY,
     scaleX: scaleFactor,
     scaleY: scaleFactor,
     opacity: fadeProgress,
+    outlineColor,
+    outlineWidth,
+    outlineStyle,
   });
-
-  canvas.add(textImage);
 }
 
 async function renderWordByWord({
@@ -240,6 +449,9 @@ async function renderWordByWord({
   originY,
   scaleFactor,
   width,
+  outlineColor,
+  outlineWidth,
+  outlineStyle,
 }: {
   text: string;
   textColor: string;
@@ -253,6 +465,9 @@ async function renderWordByWord({
   originY: OriginY;
   scaleFactor: number;
   width: number;
+  outlineColor?: string;
+  outlineWidth: number;
+  outlineStyle: "outline" | "shadow" | "glow";
 }) {
   const words = text.split(/\s+/);
   const wordDelay = 0.15; // Faster to reduce visible shifting
@@ -270,16 +485,6 @@ async function renderWordByWord({
   const visibleText = words.slice(0, Math.min(visibleWords + 1, words.length)).join(" ");
 
   if (visibleText.trim()) {
-    const visibleTextBox = new Textbox(visibleText, {
-      fill: textColor,
-      fontFamily,
-      fontSize,
-      textAlign: textAlign,
-      width: width * 0.8,
-    });
-
-    const visibleTextImage = visibleTextBox.cloneAsImage({});
-
     // Calculate opacity for the last word - completely different approach
     const currentWordProgress = (progress * totalDuration - visibleWords * wordDelay) / wordDelay;
 
@@ -292,17 +497,25 @@ async function renderWordByWord({
       opacity = visibleWords < words.length - 1 ? 1 : Math.min(Math.max(currentWordProgress, 0), 1);
     }
 
-    visibleTextImage.set({
-      originX,
-      originY,
+    renderTextWithEffect({
+      text: visibleText,
+      textColor,
+      fontFamily,
+      fontSize,
+      textAlign,
+      width: width * 0.8,
+      canvas,
       left,
       top,
+      originX,
+      originY,
       scaleX: scaleFactor,
       scaleY: scaleFactor,
-      opacity: opacity,
+      opacity,
+      outlineColor,
+      outlineWidth,
+      outlineStyle,
     });
-
-    canvas.add(visibleTextImage);
   }
 }
 
@@ -319,6 +532,9 @@ async function renderLetterByLetter({
   originY,
   scaleFactor,
   width,
+  outlineColor,
+  outlineWidth,
+  outlineStyle,
 }: {
   text: string;
   textColor: string;
@@ -332,6 +548,9 @@ async function renderLetterByLetter({
   originY: OriginY;
   scaleFactor: number;
   width: number;
+  outlineColor?: string;
+  outlineWidth: number;
+  outlineStyle: "outline" | "shadow" | "glow";
 }) {
   const letters = text.split("");
   const letterDelay = 0.05; // Faster to reduce visible shifting
@@ -349,16 +568,6 @@ async function renderLetterByLetter({
   const visibleText = letters.slice(0, Math.min(visibleLetters + 1, letters.length)).join("");
 
   if (visibleText.trim()) {
-    const textBox = new Textbox(visibleText, {
-      fill: textColor,
-      fontFamily,
-      fontSize,
-      textAlign: textAlign,
-      width: width * 0.8,
-    });
-
-    const textImage = textBox.cloneAsImage({});
-
     // Calculate opacity for the last letter - completely different approach
     const currentLetterProgress =
       (progress * totalDuration - visibleLetters * letterDelay) / letterDelay;
@@ -373,16 +582,24 @@ async function renderLetterByLetter({
         visibleLetters < letters.length - 1 ? 1 : Math.min(Math.max(currentLetterProgress, 0), 1);
     }
 
-    textImage.set({
-      originX,
-      originY,
+    renderTextWithEffect({
+      text: visibleText,
+      textColor,
+      fontFamily,
+      fontSize,
+      textAlign,
+      width: width * 0.8,
+      canvas,
       left,
       top,
+      originX,
+      originY,
       scaleX: scaleFactor,
       scaleY: scaleFactor,
-      opacity: opacity,
+      opacity,
+      outlineColor,
+      outlineWidth,
+      outlineStyle,
     });
-
-    canvas.add(textImage);
   }
 }

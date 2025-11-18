@@ -1,4 +1,4 @@
-FROM node:lts-bookworm AS build
+FROM node:22-bookworm AS build
 
 # Install dependencies for building canvas/gl
 RUN apt-get update -y
@@ -19,8 +19,10 @@ RUN apt-get -y install \
 
 WORKDIR /app
 
-# Install node dependencies
-COPY package.json ./
+# Copy package files
+COPY package*.json ./
+
+# Install all dependencies (including dev for build)
 RUN npm install --no-fund --no-audit
 
 # Add app source
@@ -51,7 +53,7 @@ RUN apt-get --purge autoremove -y \
 RUN rm -rf /var/lib/apt/lists/* /var/cache/apt/*
 
 # Final stage for app image
-FROM node:lts-bookworm
+FROM node:22-bookworm
 
 # Install runtime dependencies
 RUN apt-get update -y \
@@ -61,8 +63,19 @@ RUN apt-get update -y \
 WORKDIR /app
 COPY --from=build /app /app
 
+# Create directories for temp processing
+RUN mkdir -p temp output
+
+# Set permissions
+RUN chmod -R 777 temp output
+
 # Ensure `editly` binary available in container
 RUN npm link
 
-ENTRYPOINT ["/usr/bin/dumb-init", "--", "xvfb-run", "--server-args", "-screen 0 1280x1024x24 -ac"]
+# Set Node.js memory limits (8GB)
+ENV NODE_OPTIONS="--max-old-space-size=8192"
+
+# Use dumb-init and xvfb for proper handling of headless rendering
+# Increased screen size and memory for better canvas handling
+ENTRYPOINT ["/usr/bin/dumb-init", "--", "xvfb-run", "--auto-servernum", "--server-args", "-screen 0 1024x768x24 -ac +extension GLX +render -noreset"]
 CMD [ "editly" ]
