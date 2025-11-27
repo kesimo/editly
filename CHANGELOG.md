@@ -1,5 +1,82 @@
 # Changelog - Title Layer Animation Effects
 
+## Version: 0.18.0
+
+**Date:** 27.11.2025
+
+### 🌐 Global visual layers (globalLayers)
+
+- New optional top-level field `globalLayers` in the JSON/JSON5 config.
+- `globalLayers` are rendered **globally over the full timeline** and are automatically projected onto all clips where they are visible on the global timeline.
+- `start` and `stop` in `globalLayers` are **seconds from the beginning of the video** (based on the effective video timeline including transitions).
+
+#### Example: Global letter-by-letter title across clips
+
+```json5
+{
+  outPath: "./global-title-example.mp4",
+  clips: [
+    { duration: 3, layers: [{ type: "fill-color", color: "#003366" }] },
+    { duration: 4, layers: [{ type: "fill-color", color: "#660033" }] },
+  ],
+  globalLayers: [
+    {
+      type: "title",
+      text: "Global Title across Clips",
+      position: "bottom",
+      style: "letter-by-letter",
+      animationDuration: 5, // seconds for the full reveal
+      start: 1, // 1s after video start
+      stop: 6, // visible until 6s on the global timeline
+    },
+  ],
+}
+```
+
+The `title` layer is automatically projected into both clips. The `letter-by-letter` animation runs globally from `start` to `stop` without restarting when switching between clips.
+
+#### Supported layer types in `globalLayers`
+
+- **Supported (visual / non-audio layers):**
+
+  - `title`
+  - `subtitle`
+  - `image`
+  - `image-overlay`
+  - `fill-color`
+  - `radial-gradient`
+  - `linear-gradient`
+  - `rainbow-colors`
+  - `slide-in-text`
+  - `news-title`
+  - `title-background`
+
+- **Not allowed in `globalLayers`:**
+
+  - `audio`
+  - `detached-audio`
+
+  These layer types will trigger a validation error or be ignored. For audio that spans the full video, you should continue to use `audioTracks` or background audio.
+
+#### Known limitations / ⚠️ Notes
+
+- **Video layer in `globalLayers`:**
+  - `type: "video"` is currently **not supported** as a global layer (it is rejected during validation).
+- **Transitions and global time:**
+  - The global timeline for `start` / `stop` is based on the effective video duration (clips minus the overlap consumed by transitions).
+  - In most cases this matches the perceived timeline, but global layers cannot guarantee to cover a transition _frame-perfectly_ in all situations.
+- **Continuous animations:**
+  - For projected `globalLayers`, the animation progress (`progress`) is internally computed using `_globalDuration` / `_globalOffset` and continues seamlessly across clip boundaries.
+  - For complex, custom layers (e.g. `canvas` / `fabric` / `gl`), this behavior has not yet been exhaustively tested for all edge cases.
+
+### 🔊 MP3 output support
+
+- `outPath` can now also end with `.mp3` to produce an **audio-only export**.
+- Behavior:
+  - Only the audio pipeline is used (e.g. mix of `audioTracks`, clip audio, background audio).
+  - No video stream is produced.
+- Existing output formats (`.mp4`, `.mkv`, `.gif`) continue to work unchanged.
+
 ## Version: 0.17.0
 
 **Date:** 18.11.2025
