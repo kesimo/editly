@@ -295,4 +295,8 @@ export class Configuration {
   get isGif() {
     return this.outPath.toLowerCase().endsWith(".gif");
   }
+
+  get isAudioOnly() {
+    return this.outPath.toLowerCase().endsWith(".mp3");
+  }
 }

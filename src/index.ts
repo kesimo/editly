@@ -86,6 +86,29 @@ async function Editly(input: ConfigurationOptions): Promise<void> {
       })
     : undefined;
 
+  if (config.isAudioOnly) {
+    assert(
+      audioFilePath,
+      "No audio to output. Enable keepSourceAudio, provide audioTracks or audioFilePath.",
+    );
+
+    const audioOutputArgs = customOutputArgs
+      ? customOutputArgs
+      : ["-acodec", "libmp3lame", "-b:a", "192k"];
+
+    const args = ["-nostdin", "-i", audioFilePath, ...audioOutputArgs, "-y", outPath];
+
+    await ffmpeg(args);
+
+    if (!keepTmp) await fsExtra.remove(tmpDir);
+
+    console.log();
+    console.log("Done. Output file can be found at:");
+    console.log(outPath);
+
+    return;
+  }
+
   // Try to detect parameters from first video
   let firstVideoWidth;
   let firstVideoHeight;
