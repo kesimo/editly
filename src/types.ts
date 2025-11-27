@@ -164,6 +164,18 @@ export interface BaseLayer {
    * @private
    */
   layerDuration?: number;
+
+  /**
+   * INTERNAL: Total duration of a global layer across the whole video timeline.
+   * Only set for projected globalLayers segments; ignored for normal clip-local layers.
+   */
+  _globalDuration?: number;
+
+  /**
+   * INTERNAL: Offset from the global layer start to the beginning of this clip segment.
+   * Used to compute a continuous animation progress across multiple clips.
+   */
+  _globalOffset?: number;
 }
 
 export interface TextLayer extends BaseLayer {

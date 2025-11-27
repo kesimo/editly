@@ -3,7 +3,13 @@ import { merge } from "lodash-es";
 import { nanoid } from "nanoid";
 import { dirname, join } from "path";
 import { expandLayerAliases } from "./sources/index.js";
-import type { AudioNormalizationOptions, AudioTrack, Clip, DefaultOptions } from "./types.js";
+import type {
+  AudioNormalizationOptions,
+  AudioTrack,
+  Clip,
+  DefaultOptions,
+  Layer,
+} from "./types.js";
 
 export type DebugOptions = {
   verbose?: boolean;
@@ -138,6 +144,12 @@ export type ConfigurationOptions = {
   audioNorm?: AudioNormalizationOptions;
 
   /**
+   * Global visual layers rendered on top of all clips.
+   * Audio layers are not allowed here. Use "audioTracks" or "detached-audio" instead.
+   */
+  globalLayers?: Layer[];
+
+  /**
    * WARNING: Undocumented feature!
    */
   keepTmp?: boolean;
@@ -161,6 +173,7 @@ const globalDefaults = {
 
 export class Configuration {
   clips: Clip[];
+  globalLayers: Layer[];
   outPath: string;
   tmpDir: string;
   allowRemoteRequests: boolean;
@@ -214,6 +227,25 @@ export class Configuration {
     this.outputVolume = input.outputVolume;
     this.customOutputArgs = input.customOutputArgs;
     this.defaults = merge({}, globalDefaults, input.defaults);
+
+    const globalLayersIn = input.globalLayers ?? [];
+    assert(Array.isArray(globalLayersIn), "globalLayers must be an array when provided.");
+    this.globalLayers = globalLayersIn
+      .map(expandLayerAliases)
+      .flat()
+      .map((layer) => {
+        assert(layer.type, 'All "globalLayers" must have a type');
+        assert(
+          layer.type !== "audio" && layer.type !== "detached-audio",
+          'Audio layer types ("audio"/"detached-audio") are not allowed in "globalLayers". Use "audioTracks" or "detached-audio" layers instead.',
+        );
+        return merge(
+          {},
+          this.defaults.layer ?? {},
+          this.defaults.layerType?.[layer.type] ?? {},
+          layer,
+        );
+      });
 
     this.clips = input.clips.map((clip) => {
       let { layers } = clip;

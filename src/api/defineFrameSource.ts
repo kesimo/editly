@@ -54,9 +54,25 @@ export class FrameSource<T extends BaseLayer> {
   }
 
   async readNextFrame(time: number, canvas: StaticCanvas) {
-    const { start, layerDuration } = this.layer;
+    const { start, layerDuration, _globalDuration, _globalOffset } = this.layer as BaseLayer;
 
-    const offsetTime = time - (start ?? 0);
+    // Time relative to this clip segment
+    const localOffsetTime = time - (start ?? 0);
+
+    // If this layer is part of a projected global layer, compute progress over the
+    // full global duration so animations continue smoothly across clips.
+    if (_globalDuration != null && _globalDuration > 0 && _globalOffset != null) {
+      const globalOffsetTime = _globalOffset + localOffsetTime;
+      const globalProgress = globalOffsetTime / _globalDuration;
+      const shouldDrawLayer = globalProgress >= 0 && globalProgress <= 1;
+
+      if (!shouldDrawLayer) return;
+
+      return await this.implementation.readNextFrame(globalProgress, canvas, globalOffsetTime);
+    }
+
+    // Default behavior for clip-local layers
+    const offsetTime = localOffsetTime;
     const offsetProgress = offsetTime / layerDuration!;
     const shouldDrawLayer = offsetProgress >= 0 && offsetProgress <= 1;
 

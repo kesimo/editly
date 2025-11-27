@@ -53,7 +53,12 @@ type ParseConfigOptions = {
   arbitraryAudio: AudioTrack[];
 } & Pick<
   Configuration,
-  "clips" | "backgroundAudioVolume" | "loopAudio" | "allowRemoteRequests" | "defaults"
+  | "clips"
+  | "backgroundAudioVolume"
+  | "loopAudio"
+  | "allowRemoteRequests"
+  | "defaults"
+  | "globalLayers"
 >;
 
 export default async function parseConfig({
@@ -64,6 +69,7 @@ export default async function parseConfig({
   loopAudio,
   allowRemoteRequests,
   defaults,
+  globalLayers,
 }: ParseConfigOptions) {
   async function handleLayer(layer: Layer): Promise<Layer | Layer[]> {
     // https://github.com/mifi/editly/issues/39
@@ -118,6 +124,18 @@ export default async function parseConfig({
   }
 
   const detachedAudioByClip: Record<number, AudioTrack[]> = {};
+
+  const globalLayersIn = globalLayers ?? [];
+  const processedGlobalLayers: Layer[] = flatMap(
+    await pMap(
+      globalLayersIn,
+      async (layer) => {
+        if (["audio", "detached-audio"].includes(layer.type)) return undefined;
+        return handleLayer(layer);
+      },
+      { concurrency: 1 },
+    ),
+  ).filter((l): l is Layer => Boolean(l));
 
   let clipsOut: ProcessedClip[] = await pMap(
     clips,
@@ -259,10 +277,14 @@ export default async function parseConfig({
   );
 
   let totalClipDuration = 0;
+  const clipStartTimes: number[] = [];
+  const clipEffectiveDurations: number[] = [];
   const clipDetachedAudio: AudioTrack[] = [];
 
   // Need to map again because now we know all clip durations, and we can adjust transitions so they are safe
   clipsOut = await pMap(clipsOut, async (clip, i) => {
+    const clipStartTime = totalClipDuration;
+    clipStartTimes[i] = clipStartTime;
     const nextClip = clipsOut[i + 1];
 
     // We clamp all transitions to half the length of every clip. If not, we risk that clips that are too short,
@@ -283,11 +305,57 @@ export default async function parseConfig({
       clipDetachedAudio.push({ ...rest, start: totalClipDuration + (start || 0) });
     }
 
-    totalClipDuration += clip.duration - safeTransitionDuration;
+    const effectiveDuration = clip.duration - safeTransitionDuration;
+    clipEffectiveDurations[i] = effectiveDuration;
+    totalClipDuration += effectiveDuration;
     clip.transition.duration = safeTransitionDuration;
 
     return clip;
   });
+
+  const totalDuration = totalClipDuration;
+
+  if (processedGlobalLayers.length > 0 && totalDuration > 0) {
+    processedGlobalLayers.forEach((baseLayer) => {
+      const globalStart = baseLayer.start ?? 0;
+      const globalStop = baseLayer.stop ?? totalDuration;
+      const globalDuration = globalStop - globalStart;
+
+      assert(
+        globalStart >= 0 && globalStop > globalStart && globalStop <= totalDuration,
+        `Invalid global layer start ${globalStart} or stop ${globalStop} (${totalDuration})`,
+      );
+
+      clipsOut.forEach((clip, i) => {
+        const clipStartTime = clipStartTimes[i] ?? 0;
+        const clipDurationEffective = clipEffectiveDurations[i] ?? clip.duration;
+        const clipEndTime = clipStartTime + clipDurationEffective;
+
+        const overlapStart = Math.max(globalStart, clipStartTime);
+        const overlapEnd = Math.min(globalStop, clipEndTime);
+
+        if (overlapEnd <= overlapStart) return;
+
+        const localStart = overlapStart - clipStartTime;
+        const localStop = overlapEnd - clipStartTime;
+        const layerDuration = localStop - localStart;
+
+        // Offset of this segment relative to the global layer start
+        const globalOffset = overlapStart - globalStart;
+
+        const layerForClip: Layer = {
+          ...baseLayer,
+          start: localStart,
+          stop: localStop,
+          layerDuration,
+          _globalDuration: globalDuration,
+          _globalOffset: globalOffset,
+        };
+
+        clip.layers.push(layerForClip);
+      });
+    });
+  }
 
   // Audio can either come from `audioFilePath`, `audio` or from "detached" audio layers from clips
   const arbitraryAudio = [

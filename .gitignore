@@ -115,3 +115,7 @@ editly-tmp-*/
 pnpm-lock.yaml
 yarn.lock
 package-lock.json
+
+# Output files & examples
+outputs
+examples
