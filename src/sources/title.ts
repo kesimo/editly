@@ -469,32 +469,72 @@ async function renderWordByWord({
   outlineWidth: number;
   outlineStyle: "outline" | "shadow" | "glow";
 }) {
-  const words = text.split(/\s+/);
   const wordDelay = 0.15; // Faster to reduce visible shifting
-  const totalDuration = words.length * wordDelay; // Remove end buffer completely
 
   // Determine text alignment based on position
   let textAlign: "left" | "center" | "right" = "center";
   if (originX === "left") textAlign = "left";
   else if (originX === "right") textAlign = "right";
 
-  // Calculate which words should be visible
-  const visibleWords = Math.floor((progress * totalDuration) / wordDelay);
+  // Precompute final wrapped lines using the full text so that words never jump
+  const layoutBox = new Textbox(text, {
+    fill: textColor,
+    fontFamily,
+    fontSize,
+    textAlign,
+    width: width * 0.8,
+  });
 
-  // Create text with only visible words, but maintain exact positioning
-  const visibleText = words.slice(0, Math.min(visibleWords + 1, words.length)).join(" ");
+  const textLines = (layoutBox as unknown as { textLines?: string[]; _textLines?: string[] })
+    .textLines ||
+    (layoutBox as unknown as { _textLines?: string[] })._textLines || [text];
+
+  const wordsPerLine: string[][] = textLines.map((line) =>
+    line
+      .split(/\s+/)
+      .map((w) => w.trim())
+      .filter((w) => w.length > 0),
+  );
+
+  const totalWords = wordsPerLine.reduce((sum, lineWords) => sum + lineWords.length, 0);
+  if (totalWords === 0) return;
+
+  const totalDuration = totalWords * wordDelay;
+
+  // Base index of fully visible words
+  const visibleWordsBase = Math.floor((progress * totalDuration) / wordDelay);
+  const clampedVisibleWords = Math.min(visibleWordsBase + 1, totalWords);
+
+  // Build visible text line-by-line using the final layout
+  const visibleLines: string[] = [];
+  let remaining = clampedVisibleWords;
+
+  for (let lineIndex = 0; lineIndex < wordsPerLine.length; lineIndex++) {
+    const lineWords = wordsPerLine[lineIndex];
+    if (remaining <= 0) {
+      visibleLines.push("");
+      continue;
+    }
+
+    const take = Math.min(remaining, lineWords.length);
+    const shownWords = lineWords.slice(0, take);
+    visibleLines.push(shownWords.join(" "));
+    remaining -= take;
+  }
+
+  const visibleText = visibleLines.join("\n");
 
   if (visibleText.trim()) {
-    // Calculate opacity for the last word - completely different approach
-    const currentWordProgress = (progress * totalDuration - visibleWords * wordDelay) / wordDelay;
+    const currentWordProgress =
+      (progress * totalDuration - visibleWordsBase * wordDelay) / wordDelay;
 
-    // Once animation is complete, always use opacity 1
+    // Once animation is mostly complete, always use opacity 1
     let opacity: number;
     if (progress >= 0.7) {
-      // End animation even earlier
       opacity = 1;
     } else {
-      opacity = visibleWords < words.length - 1 ? 1 : Math.min(Math.max(currentWordProgress, 0), 1);
+      opacity =
+        visibleWordsBase < totalWords - 1 ? 1 : Math.min(Math.max(currentWordProgress, 0), 1);
     }
 
     renderTextWithEffect({
@@ -552,34 +592,67 @@ async function renderLetterByLetter({
   outlineWidth: number;
   outlineStyle: "outline" | "shadow" | "glow";
 }) {
-  const letters = text.split("");
   const letterDelay = 0.05; // Faster to reduce visible shifting
-  const totalDuration = letters.length * letterDelay; // Remove end buffer completely
 
   // Determine text alignment based on position
   let textAlign: "left" | "center" | "right" = "center";
   if (originX === "left") textAlign = "left";
   else if (originX === "right") textAlign = "right";
 
-  // Calculate which letters should be visible
-  const visibleLetters = Math.floor((progress * totalDuration) / letterDelay);
+  // Precompute final wrapped lines using the full text so that letters never jump
+  const layoutBox = new Textbox(text, {
+    fill: textColor,
+    fontFamily,
+    fontSize,
+    textAlign,
+    width: width * 0.8,
+  });
 
-  // Create text with only visible letters
-  const visibleText = letters.slice(0, Math.min(visibleLetters + 1, letters.length)).join("");
+  const textLines = (layoutBox as unknown as { textLines?: string[]; _textLines?: string[] })
+    .textLines ||
+    (layoutBox as unknown as { _textLines?: string[] })._textLines || [text];
+
+  const charsPerLine: string[][] = textLines.map((line) => line.split(""));
+
+  const totalLetters = charsPerLine.reduce((sum, lineChars) => sum + lineChars.length, 0);
+  if (totalLetters === 0) return;
+
+  const totalDuration = totalLetters * letterDelay;
+
+  // Base index of fully visible letters
+  const visibleLettersBase = Math.floor((progress * totalDuration) / letterDelay);
+  const clampedVisibleLetters = Math.min(visibleLettersBase + 1, totalLetters);
+
+  // Build visible text line-by-line using the final layout
+  const visibleLines: string[] = [];
+  let remaining = clampedVisibleLetters;
+
+  for (let lineIndex = 0; lineIndex < charsPerLine.length; lineIndex++) {
+    const lineChars = charsPerLine[lineIndex];
+    if (remaining <= 0) {
+      visibleLines.push("");
+      continue;
+    }
+
+    const take = Math.min(remaining, lineChars.length);
+    const shownChars = lineChars.slice(0, take);
+    visibleLines.push(shownChars.join(""));
+    remaining -= take;
+  }
+
+  const visibleText = visibleLines.join("\n");
 
   if (visibleText.trim()) {
-    // Calculate opacity for the last letter - completely different approach
     const currentLetterProgress =
-      (progress * totalDuration - visibleLetters * letterDelay) / letterDelay;
+      (progress * totalDuration - visibleLettersBase * letterDelay) / letterDelay;
 
-    // Once animation is complete, always use opacity 1
+    // Once animation is mostly complete, always use opacity 1
     let opacity: number;
     if (progress >= 0.7) {
-      // End animation even earlier
       opacity = 1;
     } else {
       opacity =
-        visibleLetters < letters.length - 1 ? 1 : Math.min(Math.max(currentLetterProgress, 0), 1);
+        visibleLettersBase < totalLetters - 1 ? 1 : Math.min(Math.max(currentLetterProgress, 0), 1);
     }
 
     renderTextWithEffect({

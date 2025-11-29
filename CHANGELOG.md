@@ -1,10 +1,20 @@
 # Changelog - Title Layer Animation Effects
 
+## Version: 0.18.1
+
+**Date:** 29.11.2025
+
+### Title word-by-word & letter-by-letter improvements
+
+- Refined `word-by-word` and `letter-by-letter` title animations to use a **precomputed line layout**.
+- Words and letters now appear **directly in their final line**, without visibly jumping when a line wraps.
+- Rendering continues to respect `position`, `fontSize`, `textAlign` and outline effects.
+
 ## Version: 0.18.0
 
 **Date:** 27.11.2025
 
-### 🌐 Global visual layers (globalLayers)
+### Global visual layers (globalLayers)
 
 - New optional top-level field `globalLayers` in the JSON/JSON5 config.
 - `globalLayers` are rendered **globally over the full timeline** and are automatically projected onto all clips where they are visible on the global timeline.
