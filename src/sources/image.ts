@@ -35,12 +35,13 @@ export default defineFrameSource<ImageLayer>(
         const img = createImg();
 
         const scaleFactor = getZoomParams({ progress, zoomDirection, zoomAmount });
-        const translationParams = getTranslationParams({ progress, zoomDirection, zoomAmount });
+        const translation = getTranslationParams({ progress, zoomDirection, zoomAmount });
 
         const ratioW = width / img.width;
         const ratioH = height / img.height;
 
-        img.left = width / 2 + translationParams;
+        img.left = width / 2 + translation.x;
+        img.top = height / 2 + translation.y;
 
         if (["contain", "contain-blur"].includes(resizeMode)) {
           if (ratioW > ratioH) {

@@ -141,7 +141,13 @@ export function getZoomParams({
   zoomAmount = 0.1,
 }: KenBurns & { progress: number }) {
   let scaleFactor = 1;
-  if (zoomDirection === "left" || zoomDirection === "right") return 1.3 + zoomAmount;
+  if (
+    zoomDirection === "left" ||
+    zoomDirection === "right" ||
+    zoomDirection === "up" ||
+    zoomDirection === "down"
+  )
+    return 1.3 + zoomAmount;
   if (zoomDirection === "in") scaleFactor = 1 + zoomAmount * progress;
   else if (zoomDirection === "out") scaleFactor = 1 + zoomAmount * (1 - progress);
   return scaleFactor;
@@ -152,13 +158,17 @@ export function getTranslationParams({
   zoomDirection,
   zoomAmount = 0.1,
 }: KenBurns & { progress: number }) {
-  let translation = 0;
   const range = zoomAmount * 1000;
 
-  if (zoomDirection === "right") translation = progress * range - range / 2;
-  else if (zoomDirection === "left") translation = -(progress * range - range / 2);
+  let translationX = 0;
+  if (zoomDirection === "right") translationX = progress * range - range / 2;
+  else if (zoomDirection === "left") translationX = -(progress * range - range / 2);
 
-  return translation;
+  let translationY = 0;
+  if (zoomDirection === "down") translationY = progress * range - range / 2;
+  else if (zoomDirection === "up") translationY = -(progress * range - range / 2);
+
+  return { x: translationX, y: translationY };
 }
 
 export function getRekt(width: number, height: number) {

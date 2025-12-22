@@ -1,5 +1,77 @@
 # Changelog - Title Layer Animation Effects
 
+## Version: 0.19.0
+
+**Date:** 22.12.2025
+
+### Pan Up/Down Effects for Ken Burns
+
+Added vertical panning support (`"up"` and `"down"`) to the Ken Burns effect system.
+
+#### Supported Layer Types
+
+The following layer types now support all 6 pan/zoom directions:
+
+- **`image`** - Full screen images
+- **`image-overlay`** - Positioned image overlays
+- **`title`** - Text titles with Ken Burns effects
+
+#### Available Effects
+
+All layer types above now support these `zoomDirection` values:
+
+- `"in"` - Zoom in effect
+- `"out"` - Zoom out effect
+- `"left"` - Pan left (image moves left)
+- `"right"` - Pan right (image moves right)
+- **`"up"`** - **NEW:** Pan up (image moves up)
+- **`"down"`** - **NEW:** Pan down (image moves down)
+- `null` - Disable Ken Burns effect
+
+#### Example Usage
+
+```json5
+{
+  clips: [
+    {
+      duration: 3,
+      layers: [
+        {
+          type: "image",
+          path: "photo.jpg",
+          zoomDirection: "up",
+          zoomAmount: 0.15,
+        },
+      ],
+    },
+    {
+      duration: 3,
+      layers: [
+        {
+          type: "image-overlay",
+          path: "logo.png",
+          position: "center",
+          width: 0.6,
+          zoomDirection: "down",
+          zoomAmount: 0.1,
+        },
+      ],
+    },
+    {
+      duration: 3,
+      layers: [
+        {
+          type: "title",
+          text: "My Title",
+          zoomDirection: "up",
+          zoomAmount: 0.2,
+        },
+      ],
+    },
+  ],
+}
+```
+
 ## Version: 0.18.1
 
 **Date:** 29.11.2025

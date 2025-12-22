@@ -23,8 +23,9 @@ export default defineFrameSource<ImageOverlayLayer>(
       async readNextFrame(progress, canvas) {
         const scaleFactor = getZoomParams({ progress, zoomDirection, zoomAmount });
 
-        const translationParams = getTranslationParams({ progress, zoomDirection, zoomAmount });
-        img.left = width / 2 + translationParams;
+        const translation = getTranslationParams({ progress, zoomDirection, zoomAmount });
+        img.left = width / 2 + translation.x;
+        img.top = height / 2 + translation.y;
 
         if (relWidth != null) {
           img.scaleToWidth(relWidth * width * scaleFactor);

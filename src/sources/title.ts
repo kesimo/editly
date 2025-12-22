@@ -232,8 +232,8 @@ export default defineFrameSource<TitleLayer>("title", async ({ width, height, pa
             fontSize: fontSizeAbs,
             progress: animationProgress,
             canvas,
-            left: left + translationParams,
-            top,
+            left: left + translationParams.x,
+            top: top + translationParams.y,
             originX,
             originY,
             scaleFactor,
@@ -258,8 +258,8 @@ export default defineFrameSource<TitleLayer>("title", async ({ width, height, pa
             fontSize: fontSizeAbs,
             progress: animationProgress,
             canvas,
-            left: left + translationParams,
-            top,
+            left: left + translationParams.x,
+            top: top + translationParams.y,
             originX,
             originY,
             scaleFactor,
@@ -343,7 +343,7 @@ async function renderStaticTitle({
   originX: OriginX;
   originY: OriginY;
   scaleFactor: number;
-  translationParams: number;
+  translationParams: { x: number; y: number };
   outlineColor?: string;
   outlineWidth: number;
   outlineStyle: "outline" | "shadow" | "glow";
@@ -361,8 +361,8 @@ async function renderStaticTitle({
     textAlign,
     width: canvas.width * 0.8,
     canvas,
-    left: left + translationParams,
-    top: top + translationParams,
+    left: left + translationParams.x,
+    top: top + translationParams.y,
     originX,
     originY,
     scaleX: scaleFactor,
@@ -402,7 +402,7 @@ async function renderFadeIn({
   originX: OriginX;
   originY: OriginY;
   scaleFactor: number;
-  translationParams: number;
+  translationParams: { x: number; y: number };
   outlineColor?: string;
   outlineWidth: number;
   outlineStyle: "outline" | "shadow" | "glow";
@@ -423,8 +423,8 @@ async function renderFadeIn({
     textAlign,
     width: canvas.width * 0.8,
     canvas,
-    left: left + translationParams,
-    top: top + translationParams,
+    left: left + translationParams.x,
+    top: top + translationParams.y,
     originX,
     originY,
     scaleX: scaleFactor,
