@@ -1,37 +1,4 @@
-![](logo.png)
-
-[![Discord](https://img.shields.io/discord/986052452245700659)](https://discord.gg/P3u6zKbDK7) [![NPM version](https://img.shields.io/npm/v/editly.svg?style=flat-square)](https://npmjs.org/package/editly) ![Build status](https://github.com/mifi/editly/actions/workflows/test.yml/badge.svg) [![PayPal](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://paypal.me/mifino/usd)
-
-**Editly** is a tool and framework for declarative NLE (**non-linear video editing**) using Node.js and ffmpeg. Editly allows you to easily and **programmatically create a video** from a **set of clips, images, audio and titles**, with smooth transitions and music overlaid.
-
-Editly has a simple CLI for quickly assembling a video from a set of clips or images, or you can use its more flexible JavaScript API.
-
-Inspired by [ffmpeg-concat](https://github.com/transitive-bullshit/ffmpeg-concat), editly is much faster and doesn't require much storage because it uses **streaming** editing. Editly aims to be very extensible and feature rich with a pluggable interface for adding new **dynamic content**.
-
-[![demo](https://github.com/mifi/gifs/raw/master/commonFeatures.gif)](https://youtu.be/LNeclLkxUEY)
-
-This GIF / YouTube was created with this command: "editly [commonFeatures.json5](examples/commonFeatures.json5)". See [more examples here](https://github.com/mifi/editly/tree/master/examples#examples).
-
-## Features
-
-- Edit videos with code! 🤓
-- Declarative API with fun defaults
-- Create colorful videos with random colors generated from aesthetically pleasing palettes and random effects
-- Supports any input size, e.g. 4K video and DSLR photos
-- Can output to any dimensions and aspect ratio, e.g. _Instagram post_ (1:1), _Instagram story_ (9:16), _YouTube_ (16:9), or any other dimensions you like.
-- Content is scaled and letterboxed automatically, even if the input aspect ratio is not the same and the framerate will be converted.
-- Speed up / slow down videos automatically to match the `cutFrom`/`cutTo` segment length with each clip's `duration`
-- Overlay text and subtitles on videos, images or backgrounds
-- Accepts custom HTML5 Canvas / Fabric.js JavaScript code for custom screens or dynamic overlays
-- Render custom GL shaders (for example from [shadertoy](https://www.shadertoy.com/))
-- Can output GIF
-- Overlay transparent images or even videos with alpha channel
-- Show different sub-clips for parts of a clips duration (B-roll)
-- Picture-in-picture
-- Vignette
-- Preserve/mix multiple audio sources
-- Automatic audio crossfading
-- Automatic audio ducking and normalization
+# Demo Project
 
 ## Use cases
 

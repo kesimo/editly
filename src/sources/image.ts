@@ -7,7 +7,7 @@ import { blurImage } from "./fabric.js";
 export default defineFrameSource<ImageLayer>(
   "image",
   async ({ verbose, params, width, height }) => {
-    const { path, zoomDirection = "in", zoomAmount = 0.1, resizeMode = "contain-blur" } = params;
+    const { path, zoomDirection = null, zoomAmount = 0.1, resizeMode = "contain-blur" } = params;
 
     if (verbose) console.log("Loading", path);
 

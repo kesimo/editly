@@ -1,5 +1,48 @@
 # Changelog - Title Layer Animation Effects
 
+## Version: 0.20.0
+
+**Date:** 09.04.2026
+
+### Breaking Change: Ken Burns zoom disabled by default
+
+The default `zoomDirection` for `image` and `title` layers has been changed from `"in"` to `null` (no zoom). This means image and title layers no longer automatically zoom unless explicitly configured.
+
+#### Changed Defaults
+
+| Layer Type | Property        | Old Default | New Default |
+| ---------- | --------------- | ----------- | ----------- |
+| `image`    | `zoomDirection` | `"in"`      | `null`      |
+| `image`    | `zoomAmount`    | `0.1`       | `0.1`       |
+| `title`    | `zoomDirection` | `"in"`      | `null`      |
+| `title`    | `zoomAmount`    | `0.2`       | `0.1`       |
+
+#### Migration
+
+To restore the previous zoom behavior, explicitly set `zoomDirection` on your layers:
+
+```json5
+{
+  type: "image",
+  path: "photo.jpg",
+  zoomDirection: "in",
+  zoomAmount: 0.1,
+}
+```
+
+Or use `defaults.layerType` to apply globally:
+
+```json5
+{
+  defaults: {
+    layerType: {
+      image: { zoomDirection: "in", zoomAmount: 0.1 },
+      title: { zoomDirection: "in", zoomAmount: 0.2 },
+    },
+  },
+}
+```
+
 ## Version: 0.19.0
 
 **Date:** 22.12.2025
